@@ -1,0 +1,162 @@
+-------------------------------------------------------
+Estrutura Opaca e boas praticas de desenvolvimento em C
+-------------------------------------------------------
+
+----------
+Introdução
+----------
+
+Esse código demonstra a implementação de uma simples 
+calculadora. A idéia não é fazer uma calculadora HP, e
+sim demonstrar boas práticas de desenvolvimento em C.
+
+------------
+Problemática
+------------
+
+Como você faria para implementar uma simples 
+calculadora? Iria declarar variáveis globais para 
+armazenar os valores? Onde e como você gerenciaria 
+sua memória?
+
+Ok, uma simples calculadora é fácil de fazer e 
+gerenciar seus recursos, mas pense em um projeto
+muito maior =0. É necessário utilizar de boas
+práticas para não criar um monstro. =) 
+
+São algumas boas práticas que tentarei demonstrar
+nesse exemplo. 
+
+------------------
+Tipo de dado opaco
+------------------
+
+Um tipo de dado opaco é quando ocorre uma definição 
+incompleta no arquivo de interface (nosso caso, 
+header (.h)), então os valores só podem ser manipulados 
+através de funções (setters/getters). A implementação do 
+tipo de dado esta escondido dos usuários.
+
+Fonte: http://en.wikipedia.org/wiki/Opaque_data_type
+
+----------
+Calculator
+----------
+
+Vamos agora explicar a nossa calculadora. Lembrando
+que me preocupei mais em desenvolver um código legivel
+e organizado, qualquer bug, me reporte.
+
+------
+main.c
+------
+
+A implementação não esta tudo dentro de um arquivo .c,
+a implementação foi dividida em um módulo com caracteristicas
+comuns.
+
+Existe uma subrotina calculator_new(), que devolve um objeto
+alocado na heap. Quem for usar essa calculadora não precisa
+ficar utilizando malloc(). Fica tudo transparente para quem
+usa.
+
+Dentro do objeto calc, tem dois inteiros que armazenam os
+valores a serem calculados, porém o acesso a esses valores
+só pode ser feito através de subrotinas (setters/getters),
+porque estamos utilizando estrutura opaca (falaremos sobre 
+isso).
+
+Acessando os atributos (valores) do meu objeto:
+
+- calculator_set_first_value(calc, 10): estou armazenando
+o valor 10 como o primeiro valor para ser utilizado na hora
+de realizar uma soma, subtração, divisão ou multiplicação.
+
+- calculator_set_second_value(calc, 15): armazenando o 
+segundo valor.
+
+Para tirar a prova real que os valores foram armazenados 
+de forma correta eu posso utilizar meus GETTERS.
+calculator_get_first_value(calc, &first_value);
+calculator_get_second_value(calc, &second_value);
+
+Com os dois valores armazenados na memória posso realizar
+qualquer uma das operações matemáticas.
+
+- calculator_sum(calc, &sum_result);
+- calculator_sub(calc, &sub_result);
+- calculator_div(calc, &div_result);
+- calculator_mult(calc, &mult_result);
+
+Repare que a maioria das minhas funções retornam um
+valor booleano para falar se a operação funcionou
+ou não. Não estou fazendo a verificação nesse momento.
+
+------------
+calculator.c
+------------
+
+Aqui fica escondido toda a regra de negócio, é um
+módulo separado com características comuns. Isso que 
+gostaria de deixar claro, a idéia é parecida com 
+a de uma classe em orientação a objetos uma classe
+com atributos que são acessados via métodos, porém 
+no nosso caso é uma struct com valores que são 
+acessados apenas através de funções.
+
+Aqui contém a implementação da nossa struct (classe).
+
+struct _Calculator {
+    int first_value;
+    int second_value;
+    int ref;
+};
+
+------------
+calculator.h
+------------
+
+Definição da estrutura opaca, repare que definimos
+ela no arquivo de header e implementamos ela dentro
+do arquivo de implementação (arquivo .c)
+
+typedef struct _Calculator Calculator;
+
+------------------
+Reference Counting
+------------------
+
+Pode reparar que no final do main() existe uma função
+chamada: calculator_unref(calc). O que essa função faz?
+
+Isso é uma técnica chamada Reference Counting, é uma 
+forma de gerenciar os recursos que foram alocados na 
+memória e precisam ser liberados.
+
+Dentro da nossa struct existe um int ref; Quando
+alocamos um objeto na memória, com a função 
+calculator_new(), essa váriavel ref recebe o valor 1. 
+Quando outra parte do seu código quer usar o mesmo 
+objeto ele chama a função:
+
+calculator_ref(calc);
+
+Essa função incrementa em 1(um) o valor da variável
+ref. Quando o programador não quiser mais utilizar o 
+objeto a função: calculator_unref(calc) deve ser 
+chamada. Essa função irá decrementar em 1(um) o valor da 
+variável ref. Quando a váriavel ref chegar em 0,
+quer dizer que ninguém esta utilizando aquele
+objeto e ele pode ser liberado (free(calc)).
+
+---------
+conclusão
+---------
+
+A mensagem que eu queria passar para novos programadores
+é que existe sim uma maneira de fazer um código legivel
+e organizado, com algumas práticas de Orientação a Objetos.
+
+Faça uma pesquisa no google por: Calculadora em C. 
+Vejam como muitos fizeram seus códigos.
+
